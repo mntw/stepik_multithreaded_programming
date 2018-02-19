@@ -14,68 +14,46 @@ who | sort | uniq -c | sort -nk1
 using namespace std;
 
 
-void who (int pfd[2]) {
-    close(STDOUT_FILENO);
-    dup2(pfd[1], STDOUT_FILENO);
-    close(pfd[1]);
-    close(pfd[0]);
-    execlp("who", "who", NULL);
-}
-
-
-void sort (int pfd1[2], int pfd2[2]) {
-    close(STDIN_FILENO);
-    dup2(pfd1[0], STDIN_FILENO);
-    close(pfd1[1]);
-    close(pfd1[0]);
-    close(STDOUT_FILENO);
-    dup2(pfd2[1], STDOUT_FILENO);
-    close(pfd2[1]);
-    close(pfd2[0]);
-    execlp("sort", "sort", NULL);
-}
-
-void uniq (int pfd1[2], int pfd2[2]) {
-    close(STDIN_FILENO);
-    dup2(pfd1[0], STDIN_FILENO);
-    close(pfd1[0]); close(pfd1[1]);
-    close(STDOUT_FILENO);
-    dup2(pfd2[1], STDOUT_FILENO);
-    close(pfd2[1]); close(pfd2[0]);
-    execlp("uniq", "uniq", NULL);
-}
-
-void sort_nk1 (int pfd[2]) {
-    close(STDIN_FILENO);
-    dup2(pfd[0], STDIN_FILENO);
-    close(pfd[0]);
-    close(pfd[1]);
-    execlp("sort", "sort", NULL);
-}
-void sort_p (int pfd2[2], int pfd_main[2]) {
-    int pfd3[2]; pipe(pfd3);
-    if (!fork()) {
-        uniq(pfd3, pfd_main);
-    } else {
-        sort(pfd2, pfd3);
+void runPipe (int pipeIn[2], int pipeOut[2], char ** args) {
+    if (pipeIn[0] != STDIN_FILENO) {
+        close(STDIN_FILENO);
+        dup2(pipeIn[0], STDIN_FILENO);
+        close(pipeIn[1]);
+        close(pipeIn[0]);
     }
-}
-void who_p (int pfd_main[2]) {
-    int pfd2[2]; pipe(pfd2);
-    if (!fork()) {
-        sort_p(pfd2, pfd_main);
-    } else {
-        who(pfd2);
+    if (pipeOut[1] != STDOUT_FILENO) {
+        close(STDOUT_FILENO);
+        dup2(pipeOut[1], STDOUT_FILENO);
+        close(pipeOut[1]);
+        close(pipeOut[0]);
     }
+    execlp(args[0], args[0], NULL);
 }
 
+
+int pfdStd[2] = {STDIN_FILENO, STDOUT_FILENO};
+char * Who[] = {"tree"};
+char * Sort[] = {"hexdump"};
+char * Uniq[] = {"sort"};
+char * WC[] = {"wc"};
 //const string pipecmd  = "who | sort | uniq -c | sort -nk1";
+
 int main (int argc, char ** argv) {
-    int pfd[2]; pipe(pfd);
-    if(!fork()) {
-        who_p(pfd);
+    int pfd[2]; pipe(pfd); pid_t pID = fork();
+    if(pID == 0) {
+        int pfd2[2]; pipe(pfd2); pid_t pID = fork();
+        if (pID == 0) {
+            int pfd3[2]; pipe(pfd3); pid_t pID = fork();
+            if (pID == 0) {
+                runPipe(pfdStd, pfd3, Who);    //1st
+            } else {
+                wait(pID); runPipe(pfd3, pfd2, Sort); //2nd
+            }
+        } else {
+            wait(pID); runPipe(pfd2, pfd, Uniq); //3rd
+        }
     } else {
-        sort_nk1(pfd);
+        wait(pID); runPipe(pfd, pfdStd, WC); //4th
     }
 
     return 0;
