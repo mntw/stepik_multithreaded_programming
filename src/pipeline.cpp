@@ -27,15 +27,15 @@ void runPipe (int pipeIn[2], int pipeOut[2], char ** args) {
         close(pipeOut[1]);
         close(pipeOut[0]);
     }
-    execlp(args[0], args[0], NULL);
+    execlp(args[0], args[1], NULL);
 }
 
 
 int pfdStd[2] = {STDIN_FILENO, STDOUT_FILENO};
-char * Who[] = {"tree"};
-char * Sort[] = {"hexdump"};
-char * Uniq[] = {"sort"};
-char * WC[] = {"wc"};
+char * Who[] = {"tree", "tree"};
+char * Sort[] = {"hexdump", "hexdump"};
+char * Uniq[] = {"sort", "sort"};
+char * WC[] = {"wc", "wc"};
 //const string pipecmd  = "who | sort | uniq -c | sort -nk1";
 
 int main (int argc, char ** argv) {

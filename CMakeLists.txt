@@ -11,6 +11,7 @@ add_executable(mutex src/mutex.cpp)
 add_executable(condVar src/condVar.cpp)
 add_executable(threads_std src/threads_std_cpp11.cpp)
 add_executable(pipe src/pipeline.cpp)
+add_executable(namedPipe src/namedPipe.cpp)
 
 TARGET_LINK_LIBRARIES(pthreadCreate pthread)
 TARGET_LINK_LIBRARIES(mutex pthread)
